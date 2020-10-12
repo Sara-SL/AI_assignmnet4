@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import tensorflow as tf
-from tensorflow.keras import datasets, layers, models, losses
+from tensorflow.keras import datasets, layers, models, losses, metrics, optimizers
 
 # load data
 samplesubmission = pd.read_csv("nn-assignment/samplesubmission.csv")
@@ -38,8 +38,8 @@ valid_images = np.reshape(valid_images, (4200, 28, 28))
 #print(images[0,:,:].shape)
 
 # Normalize pixel values to be between 0 and 1
-#train_images = train_images / 255
-#valid_images = valid_images / 255
+train_images = train_images / 255
+valid_images = valid_images / 255
 
 
 # plot first 25 train_images to check reshaping
@@ -58,18 +58,22 @@ model.add(layers.MaxPooling2D((2, 2)))
 model.add(layers.Conv2D(64, (3, 3), activation='relu'))
 model.add(layers.MaxPooling2D((2, 2)))
 model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+#Typically, the final activation function is a softmax, which ensures that the output values sum up to 1.
 
 #add dense layers on top
 model.add(layers.Flatten())
-model.add(layers.Dense(64, activation='relu'))
+model.add(layers.Dense(64, activation='softmax'))
 model.add(layers.Dense(10))
 
-model.compile(optimizer='adam',
-              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-              metrics=['accuracy'])
+train_images = np.reshape(train_images, (23800, 28, 28, 1))
+valid_images = np.reshape(valid_images, (4200, 28, 28, 1))
 
-history = model.fit(train_images, train_labels, epochs=10,
-                    validation_data=(test_images, test_labels))
+model.compile(loss = 'sparse_categorical_crossentropy', optimizer = 'sgd', metrics = ['accuracy'])
+history = model.fit(train_images, train_labels, batch_size = 32, epochs = 5, validation_data = (valid_images, valid_labels))
+        # X, y − It is a tuple to evaluate your data.
+        # epochs − no of times the model is needed to be evaluated during training.
+        # batch_size − training instances.
+
 
 plt.plot(history.history['accuracy'], label='accuracy')
 plt.plot(history.history['val_accuracy'], label = 'val_accuracy')
@@ -77,9 +81,9 @@ plt.xlabel('Epoch')
 plt.ylabel('Accuracy')
 plt.ylim([0.5, 1])
 plt.legend(loc='lower right')
+plt.show()
 
-test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
-
+test_loss, test_acc = model.evaluate(valid_images,  valid_labels, verbose=2)
 
 print(test_acc)
 
