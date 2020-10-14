@@ -1,5 +1,6 @@
 # AI
 # Assignment 4
+# By: Sara Lundqvist and Leo Hoff von Sydow
 
 import pandas as pd
 import numpy as np
@@ -34,10 +35,11 @@ train_images = np.array(train.drop(['label'], axis=1))
 train_images = np.reshape(train_images, (23800, 28, 28))
 valid_images = np.array(valid.drop(['label'], axis=1))
 valid_images = np.reshape(valid_images, (4200, 28, 28))
-# print(images[0,:,:])
-# print(images[0,:,:].shape)
+test_images = np.array(testset)
+test_images = np.reshape(test_images, (14000, 28, 28))
+test_images = test_images.astype('float32')
 
-# Normalize pixel values to be between 0 and 1
+# normalize pixel values to be between 0 and 1
 train_images = train_images / 255
 valid_images = valid_images / 255
 
@@ -50,35 +52,21 @@ for i in range(25):
 plt.show()
 print(f'First 25 labels: ', train_labels[0:25])
 
+# reshape images to work as argument in models.fit()
 train_images = np.reshape(train_images, (23800, 28, 28, 1))
 valid_images = np.reshape(valid_images, (4200, 28, 28, 1))
+test_images = np.reshape(test_images, (14000, 28, 28, 1))
 
-# create convolutional base
-# model = models.Sequential()
-# model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)))
-# model.add(layers.MaxPooling2D((2, 2)))
-# model.add(layers.Conv2D(64, (3, 3), activation='relu'))
-# model.add(layers.MaxPooling2D((2, 2)))
-# model.add(layers.Conv2D(64, (3, 3), activation='relu'))
-# #Typically, the final activation function is a softmax, which ensures that the output values sum up to 1.
-# #add dense layers on top
-# model.add(layers.Flatten())
-# model.add(layers.Dense(64, activation='relu'))
-# model.add(layers.Dense(10))     #The size of the output layer is equal to the number of classes.
-#
-# model.compile(loss = 'sparse_categorical_crossentropy', optimizer = 'sgd', metrics = ['accuracy'])
-# history = model.fit(train_images, train_labels, batch_size = 32, epochs = 5, validation_data = (valid_images, valid_labels))
-#         # X, y − It is a tuple to evaluate your data.
-#         # epochs − no of times the model is needed to be evaluated during training.
-#         # batch_size − training instances.
-
-
+# create model
 model = models.Sequential()
-model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)))  #
-# model.add(layers.MaxPool2D(pool_size=(2, 2))          # Downsamples the input
+model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)))
+model.add(layers.MaxPooling2D(pool_size=(2, 2)))  # Downsamples the input
+model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+model.add(layers.MaxPool2D(pool_size=(2, 2)))
+model.add(layers.Conv2D(64, (3, 3), activation='relu'))
 model.add(layers.Flatten())
 model.add(layers.Dense(32, activation='relu'))
-model.add(layers.Dropout(0.2))  # helps prevent overfitting
+model.add(layers.Dropout(0.2))  # Helps to prevent overfitting
 model.add(layers.Dense(64, activation='relu'))
 model.add(layers.Dropout(0.2))
 model.add(layers.Dense(10, activation='softmax'))
@@ -96,7 +84,13 @@ plt.ylim([0.5, 1])
 plt.legend(loc='lower right')
 plt.show()
 
+# print accuracy
 test_loss, test_acc = model.evaluate(valid_images, valid_labels, verbose=2)
-
 print(f'Test accuracy: ', test_acc)
 
+# predict labels on testset and save in csv file
+imageID = np.arange(1, 14001)
+pred = model.predict(test_images)
+label = np.argmax(pred, axis=1)
+df = pd.DataFrame({"ImageID": imageID, "Label": label})
+df.to_csv("Submission.csv", index=False)
